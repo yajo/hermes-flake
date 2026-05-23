@@ -116,11 +116,19 @@ in {
       mkdir -p "${cfg.configDir}" "${cfg.dataDir}" "${cfg.cacheDir}"
     '';
 
-    # Source secret files into shell sessions (fish + bash).
-    # Each secret file should contain just the secret value (one line, no shell syntax).
+    # Source secrets + extraEnvironment into shell sessions (fish + bash).
+    # Secrets: file path → file contents become env var value.
+    # Extra env: static key=value pairs exported directly.
+    #
+    # NOTE: home.sessionVariables alone is unreliable for fish (HM emits a
+    # function `setup_hm_session_vars` but doesn't always invoke it).
+    # Re-exporting via shellInit guarantees the vars are present on every
+    # interactive shell.
     programs.bash.initExtra = let
       secretLine = var: file: ''[ -r "${file}" ] && export ${var}="$(< "${file}")"'';
+      envLine = var: value: ''export ${var}="${value}"'';
       lines = lib.flatten [
+        (lib.mapAttrsToList envLine cfg.extraEnvironment)
         (lib.optional (cfg.secrets.openaiApiKeyFile != null) (secretLine "OPENAI_API_KEY" cfg.secrets.openaiApiKeyFile))
         (lib.optional (cfg.secrets.anthropicApiKeyFile != null) (secretLine "ANTHROPIC_API_KEY" cfg.secrets.anthropicApiKeyFile))
         (lib.optional (cfg.secrets.openrouterApiKeyFile != null) (secretLine "OPENROUTER_API_KEY" cfg.secrets.openrouterApiKeyFile))
@@ -131,7 +139,9 @@ in {
 
     programs.fish.shellInit = let
       secretLine = var: file: ''test -r "${file}"; and set -gx ${var} (cat "${file}")'';
+      envLine = var: value: ''set -gx ${var} "${value}"'';
       lines = lib.flatten [
+        (lib.mapAttrsToList envLine cfg.extraEnvironment)
         (lib.optional (cfg.secrets.openaiApiKeyFile != null) (secretLine "OPENAI_API_KEY" cfg.secrets.openaiApiKeyFile))
         (lib.optional (cfg.secrets.anthropicApiKeyFile != null) (secretLine "ANTHROPIC_API_KEY" cfg.secrets.anthropicApiKeyFile))
         (lib.optional (cfg.secrets.openrouterApiKeyFile != null) (secretLine "OPENROUTER_API_KEY" cfg.secrets.openrouterApiKeyFile))
