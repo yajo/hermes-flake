@@ -10,12 +10,11 @@ Tracks upstream `v2026.5.16` (v0.14.0). MIT licensed.
 nix run github:ErikBPF/hermes-flake -- --help
 ```
 
-## With cachix (skip builds)
+## Skip builds
 
-```bash
-cachix use hermes-flake
-nix profile install github:ErikBPF/hermes-flake
-```
+CI publishes to GitHub Actions cache via [magic-nix-cache](https://github.com/DeterminateSystems/magic-nix-cache-action). Pull-through happens automatically when you `nix build` against this flake — no client setup required for the latest `main` build artifacts that fit GitHub's free 10GB cache.
+
+For dedicated binary substitution, set up [Garnix](https://garnix.io) (free for public repos) or self-host [Attic](https://github.com/zhaofengli/attic).
 
 ## As home-manager module
 
