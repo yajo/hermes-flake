@@ -5,8 +5,9 @@
 }: let
   yamlFormat = pkgs.formats.yaml {};
 
-  # Battle-tested default config (homelab-tuned).
-  # Values referencing ${VAR} are interpolated at hermes runtime from EnvironmentFile.
+  # Battle-tested default config matching Erik's homelab production hermes
+  # (Discovery host). Values referencing ${VAR} are interpolated at hermes
+  # runtime from EnvironmentFile.
   defaultSettings = {
     model = {
       provider = "custom";
@@ -14,27 +15,6 @@
       base_url = "https://litellm.homelab.pastelariadev.com/v1";
       api_key = "\${OPENAI_API_KEY}";
       max_context = 262144;
-    };
-
-    auxiliary = {
-      vision = {
-        provider = "custom";
-        model = "qwen-chat";
-        base_url = "https://litellm.homelab.pastelariadev.com/v1";
-        api_key = "\${OPENAI_API_KEY}";
-      };
-      compression = {
-        provider = "custom";
-        model = "qwen-chat";
-        base_url = "https://litellm.homelab.pastelariadev.com/v1";
-        api_key = "\${OPENAI_API_KEY}";
-      };
-      session_search = {
-        provider = "custom";
-        model = "qwen-chat";
-        base_url = "https://litellm.homelab.pastelariadev.com/v1";
-        api_key = "\${OPENAI_API_KEY}";
-      };
     };
 
     compression = {
@@ -58,23 +38,61 @@
       lifetime_seconds = 300;
     };
 
-    # Platforms — port/secret/host typically come from env (gateway/config.py
-    # injects env values into these blocks at runtime). Keep declarations here
-    # so the platforms are registered + non-env settings persist.
+    display = {
+      theme = "dark";
+    };
+
+    agent = {
+      max_turns = 60;
+      verbose = false;
+      reasoning_effort = "medium";
+    };
+
+    tool_loop_guardrails = {
+      warnings_enabled = true;
+      hard_stop_enabled = false;
+    };
+
+    session_reset = {
+      mode = "both";
+      idle_minutes = 1440;
+      at_hour = 4;
+      group_sessions_per_user = true;
+    };
+
+    browser = {
+      inactivity_timeout = 120;
+    };
+
+    delegation = {
+      max_iterations = 50;
+      max_concurrent_children = 3;
+      max_spawn_depth = 1;
+    };
+
+    skills = {
+      creation_nudge_interval = 15;
+    };
+
+    stt = {
+      enabled = true;
+      provider = "local";
+    };
+
+    privacy = {
+      redact_pii = true;
+    };
+
+    # Platform registration — runtime port/secret/host values flow from env
+    # vars via gateway/config.py.
     platforms = {
       api_server = {
         enabled = true;
       };
       webhook = {
         enabled = true;
-        # Routes are config-only (env can't define routes). Each route MUST
-        # have an HMAC secret. Example shape:
-        #
-        # extra:
-        #   routes:
-        #     ci:
-        #       hmac_secret_env: WEBHOOK_CI_SECRET  # reads $WEBHOOK_CI_SECRET
-        #       prompt: "CI event: {{ payload.action }} on {{ payload.repo }}"
+        # Routes go here (config-only, can't be set via env). See
+        # docs/WEBHOOK_ROUTES.md.
       };
       telegram = {
         enabled = true;
@@ -86,8 +104,7 @@
       };
     };
 
-    # Discord settings live at TOP LEVEL (not under platforms.discord) per
-    # upstream schema.
+    # Discord — TOP-LEVEL per upstream schema (NOT under platforms.discord).
     discord = {
       require_mention = true;
       auto_thread = true;
@@ -95,47 +112,6 @@
       reactions = true;
       history_backfill = true;
       history_backfill_limit = 50;
-    };
-
-    agent = {
-      max_turns = 60;
-      verbose = false;
-      reasoning_effort = "medium";
-    };
-
-    tool_loop_guardrails = {
-      enabled = true;
-    };
-
-    session_reset = {
-      enabled = true;
-    };
-
-    browser = {
-      backend = "playwright";
-    };
-
-    delegation = {
-      enabled = true;
-    };
-
-    skills = {
-      creation_nudge_interval = 15;
-    };
-
-    file_read_max_chars = 100000;
-
-    privacy = {
-      redact_pii = true;
-    };
-
-    model_aliases = {
-      qwen = {
-        provider = "custom";
-        model = "qwen-chat";
-        base_url = "https://litellm.homelab.pastelariadev.com/v1";
-        api_key = "\${OPENAI_API_KEY}";
-      };
     };
   };
 
