@@ -137,13 +137,14 @@ in {
       services.hermes-agent = {
         enable = true;
         environmentFile = "/etc/hermes-agent-fake-env";
+        openBindAddress = "0.0.0.0"; # exercise non-default
         telegramAllowedUsers = [42 123456789];
         telegramAllowedChats = ["-1001234567890"];
         apiServerCorsOrigins = ["https://hermes.example.com"];
         maxIterations = 120;
         enableDashboard = true;
         profile = "test";
-        memoryMax = "1G";
+        memoryMax = "1G"; # exercise null-default override
         cpuQuota = "100%";
       };
 

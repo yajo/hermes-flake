@@ -6,7 +6,7 @@ Trade-off matrix for the host where hermes-agent runs 24/7.
 |---|---|---|---|---|---|
 | **Bare-metal NixOS** | `nixosModules.default` | systemd hardening only | 0 | ✅ | btrfs subvolume |
 | **nixos-container** (this flake) | `nixosModules.hermes-agent-container` | namespace isolation (mnt, pid, uts, ipc) | ~10 MB extra RAM | ✅ | container fs = subvolume |
-| **microvm.nix** | — (DIY) | full VM (kernel-level) | 50-150 MB RAM, kvm | ✅ | image-level snapshots |
+| **microvm.nix** (this flake) | `nixosModules.hermes-agent-microvm` | full VM (kernel-level) | ~100 MB RAM, kvm | ✅ | image-level snapshots |
 | **podman quadlet** | — (DIY) | cgroups + namespaces | ~5 MB | partial (quadlet YAML) | volume bind |
 | **Docker compose** | — (current) | cgroups + namespaces | ~5 MB | imperative YAML | volume bind |
 
@@ -85,29 +85,43 @@ Send/receive to an offsite host (e.g. over Tailscale):
 sudo btrfs send /var/lib/snapshots/hermes-... | ssh voyager 'sudo btrfs receive /backup/hermes/'
 ```
 
-## microvm.nix (if you want VM-grade)
+## microvm.nix (VM-grade isolation)
 
-Out of scope for this flake (the `microvm.nixosModules.microvm` wraps any NixOS config, not specific to hermes). Sketch:
+First-class module: `nixosModules.hermes-agent-microvm`. Wraps the base service inside a microvm with its own kernel, virtio-9p shares for `dataDir` + secrets, and qemu user-net port forwards by default.
+
+Host requirements:
 
 ```nix
-{
-  imports = [ microvm.nixosModules.microvm ];
-  microvm = {
-    hypervisor = "qemu";
-    mem = 1024;
-    vcpu = 2;
-    shares = [{
-      tag = "hermes-data";
-      source = "/var/lib/hermes-agent";
-      mountPoint = "/var/lib/hermes-agent";
-    }];
-  };
-  imports = [ hermes-flake.nixosModules.default ];
-  services.hermes-agent.enable = true;
-}
+# host configuration.nix
+imports = [
+  inputs.microvm.nixosModules.host
+  inputs.hermes-flake.nixosModules.hermes-agent-microvm
+];
+
+services.hermes-agent-microvm = {
+  enable = true;
+  memMB = 2048;
+  vcpu = 2;
+  hypervisor = "qemu";   # or "cloud-hypervisor" / "firecracker" / "crosvm"
+  hostDataDir = "/var/lib/hermes-agent";
+  hostSecretsPath = config.sops.secrets."hermes-agent/env".path;
+  extras = [ "voice" "anthropic" ];
+  telegramAllowedUsers = [ 123456789 ];
+};
 ```
 
-Doable but adds ~100 MB RAM idle. Worth it only if you don't trust the host kernel boundary.
+`microvm` is shipped as an optional flake input — pulling the host module via `inputs.microvm.nixosModules.host` is required on the host before the wrapper module evaluates (a clear assertion fires if missing).
+
+Trade-offs vs `nixos-container`:
+
+| Axis | container (nspawn) | microvm |
+|---|---|---|
+| Kernel | host's | dedicated guest kernel |
+| RAM overhead | ~10 MB | ~100 MB idle |
+| Boot time | ms | ~2-5 s |
+| Network isolation | shared netns or veth | full isolation (TAP/user-net) |
+| Escape surface | container syscalls | hypervisor + virtio |
+| Use this when | trust host, want declarative isolation | strong adversarial threat model, don't trust host kernel |
 
 ## podman (alternative without leaving this flake's ecosystem)
 

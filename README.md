@@ -161,6 +161,26 @@ If you're migrating from the upstream Docker compose deployment, see [docs/MIGRA
 
 - **Single instance.** `gateway run --replace` ensures only one running gateway per dataDir. Don't run the systemd service AND a CLI session simultaneously against the same dataDir.
 
+## Development
+
+Enter a dev shell with all the tooling pre-installed:
+
+    nix develop
+
+Common recipes via [`just`](https://github.com/casey/just):
+
+    just                  # list recipes
+    just build            # base build
+    just build-extras "voice anthropic mcp"
+    just check            # nix flake check --no-build
+    just check-full       # everything except VM test
+    just check-vm         # VM module test (needs KVM)
+    just update-check     # is upstream ahead?
+    just update           # apply latest upstream release
+    just extras           # list available extras
+    just fmt              # alejandra .
+    just lint             # statix + deadnix
+
 ## CI cache
 
 Cache hits via [magic-nix-cache](https://github.com/DeterminateSystems/magic-nix-cache-action) on each CI run. Free, GH-Actions-bounded (10 GB, 7-day eviction). For dedicated substitution, switch to [Garnix](https://garnix.io) (free for public repos) or self-host [Attic](https://github.com/zhaofengli/attic).
@@ -181,7 +201,8 @@ MIT.
 
 - **Bare-metal NixOS module** — `nixosModules.default` (recommended for trusted hosts)
 - **nixos-container wrapper** — `nixosModules.hermes-agent-container` (Docker-like systemd-nspawn isolation, fully declarative)
-- **podman/microvm.nix** — sketched in [docs/ISOLATION.md](docs/ISOLATION.md)
+- **microvm wrapper** — `nixosModules.hermes-agent-microvm` (KVM-isolated guest with its own kernel)
+- **podman** — sketched in [docs/ISOLATION.md](docs/ISOLATION.md)
 
 Container quickstart:
 

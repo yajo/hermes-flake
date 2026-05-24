@@ -163,12 +163,15 @@ in {
 
     openBindAddress = mkOption {
       type = types.str;
-      default = "0.0.0.0";
+      default = "127.0.0.1";
       description = ''
-        Bind address for the API server. Defaults to 0.0.0.0 so reverse proxies
-        (SWAG) can reach it. When NOT localhost, the env var `API_SERVER_KEY`
-        is required (set via environmentFile).
+        Bind address for the API server. Defaults to localhost — matches
+        upstream's default. Set to `0.0.0.0` (or a specific NIC) only when
+        you need external clients to reach it via a reverse proxy. When NOT
+        localhost, `API_SERVER_KEY` becomes mandatory (set via
+        `environmentFile`).
       '';
+      example = "0.0.0.0";
     };
 
     apiPort = mkOption {
@@ -266,15 +269,23 @@ in {
     };
 
     memoryMax = mkOption {
-      type = types.str;
-      default = "2G";
-      description = "systemd MemoryMax hardening directive.";
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        systemd MemoryMax directive. Null = no cap (kernel decides on
+        pressure). Set to e.g. "2G" on hosts where you want a hard ceiling.
+      '';
+      example = "2G";
     };
 
     cpuQuota = mkOption {
-      type = types.str;
-      default = "200%";
-      description = "systemd CPUQuota hardening directive (200% = 2 cores).";
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        systemd CPUQuota directive. Null = no cap. Set to e.g. "200%" to
+        cap at 2 cores' worth of CPU time.
+      '';
+      example = "200%";
     };
 
     openFirewall = mkOption {
@@ -414,8 +425,8 @@ in {
         ProtectSystem = "strict";
         ProtectHome = "read-only";
         ReadWritePaths = [cfg.dataDir];
-        MemoryMax = cfg.memoryMax;
-        CPUQuota = cfg.cpuQuota;
+        MemoryMax = mkIf (cfg.memoryMax != null) cfg.memoryMax;
+        CPUQuota = mkIf (cfg.cpuQuota != null) cfg.cpuQuota;
 
         # Additional defense
         ProtectKernelTunables = true;

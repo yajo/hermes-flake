@@ -31,6 +31,14 @@
       url = "github:NousResearch/hermes-agent/v2026.5.16";
       flake = false;
     };
+
+    # Optional — only required when using nixosModules.hermes-agent-microvm.
+    # Pull only when the consumer wires it; nothing forces it as a runtime dep.
+    microvm = {
+      url = "github:astro/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "";
+    };
   };
 
   outputs = inputs @ {
@@ -88,6 +96,33 @@
         };
 
         formatter = pkgs.alejandra;
+
+        devShells.default = pkgs.mkShellNoCC {
+          name = "hermes-flake-dev";
+          packages = with pkgs; [
+            # nix + lint
+            nix
+            alejandra
+            statix
+            deadnix
+            nil # nix LSP
+            # update flow
+            curl
+            jq
+            git
+            # task runner
+            just
+            # for the update script
+            gnused
+            findutils
+          ];
+          shellHook = ''
+            echo "hermes-flake dev shell"
+            echo "  just --list        show recipes"
+            echo "  just check         run nix flake check"
+            echo "  just update-check  see if upstream has a newer hermes-agent"
+          '';
+        };
       };
 
       flake = {
@@ -112,6 +147,18 @@
         }:
           import ./container.nix {
             inherit config lib pkgs;
+            flakeSelf = self;
+          };
+
+        nixosModules.hermes-agent-microvm = {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+          import ./microvm.nix {
+            inherit config lib pkgs;
+            flakeInputs = inputs;
             flakeSelf = self;
           };
 
