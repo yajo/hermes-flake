@@ -180,17 +180,17 @@ in {
       ]:
         assert key in unit, f"missing env: {key}"
 
-      # Hardening directives present
+      # Baseline process safety (only the directives the module prescribes —
+      # additional kernel/namespace hardening is consumer-driven).
       for directive in [
         "ProtectSystem=strict",
+        "ProtectHome=read-only",
         "PrivateTmp=true",
         "NoNewPrivileges=true",
         "MemoryMax=1G",
         "CPUQuota=100%",
-        "ProtectKernelTunables=true",
-        "RestrictRealtime=true",
       ]:
-        assert directive in unit, f"missing hardening: {directive}"
+        assert directive in unit, f"missing baseline safety: {directive}"
 
       # ReadWritePaths includes the dataDir
       assert "ReadWritePaths=/var/lib/hermes-agent" in unit, "ReadWritePaths missing dataDir"

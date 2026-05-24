@@ -162,6 +162,17 @@
             flakeSelf = self;
           };
 
+        nixosModules.hermes-agent-podman = {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
+          import ./podman.nix {
+            inherit config lib pkgs;
+            flakeSelf = self;
+          };
+
         homeManagerModules.default = import ./modules/home-manager.nix {
           inherit (self) packages;
         };

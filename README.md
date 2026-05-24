@@ -42,13 +42,9 @@ Unknown extras error at eval time. Some sdist-only extras (`dingtalk`, `feishu`,
 
     nix run github:ErikBPF/hermes-flake -- --version
 
-## Why uv2nix
+## Build mechanism
 
-Hermes upstream uses `uv` and ships an exact-pinned `uv.lock`. `uv2nix` reads that lock as-is and derives the Python dep graph. Alternatives considered:
-
-- **`buildPythonApplication`** — would require manual replication of 50+ deps from `uv.lock`. High drift risk.
-- **`poetry2nix`** — wrong tool (hermes doesn't use Poetry).
-- **PyPI sdist** — sdist usually drops `uv.lock`, so we'd lose the lockfile. The github tag at `v2026.5.16` is the same code PyPI ships *plus* the lockfile.
+Uses [`uv2nix`](https://github.com/pyproject-nix/uv2nix) to translate upstream's `uv.lock` into nix derivations. Source is pinned to the upstream `v2026.5.16` git tag (which carries `uv.lock`; PyPI sdists do not).
 
 ## NixOS service
 
@@ -99,7 +95,7 @@ High-level groups:
 - **Telegram**: `telegramAllowedUsers`, `telegramAllowedChats`, `telegramAllowedTopics`
 - **Dashboard (port 9119, off)**: `enableDashboard`, `dashboardHost`, `dashboardPort`
 - **Model backend**: `openaiBaseUrl`
-- **systemd hardening**: `memoryMax`, `cpuQuota`, `openFirewall`, `extraServiceDeps`
+- **systemd**: `memoryMax`, `cpuQuota`, `openFirewall`, `extraServiceDeps`. Baseline process safety (`NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=read-only`, `ReadWritePaths=[dataDir]`) is always applied. Kernel-level hardening is **not** prescribed — apply via your host's standard `systemd.services.hermes-agent.serviceConfig = {...}` override.
 - **Healthcheck**: `enableHealthcheck`, `healthcheckInterval`
 
 ## sops-nix integration
@@ -183,7 +179,7 @@ Common recipes via [`just`](https://github.com/casey/just):
 
 ## CI cache
 
-Cache hits via [magic-nix-cache](https://github.com/DeterminateSystems/magic-nix-cache-action) on each CI run. Free, GH-Actions-bounded (10 GB, 7-day eviction). For dedicated substitution, switch to [Garnix](https://garnix.io) (free for public repos) or self-host [Attic](https://github.com/zhaofengli/attic).
+CI uses [magic-nix-cache](https://github.com/DeterminateSystems/magic-nix-cache-action) (GH Actions cache, 10 GB / 7-day eviction). No client setup required for `main` artifacts that fit the window.
 
 ## Versions
 
@@ -199,10 +195,10 @@ MIT.
 
 ## Isolation options
 
-- **Bare-metal NixOS module** — `nixosModules.default` (recommended for trusted hosts)
-- **nixos-container wrapper** — `nixosModules.hermes-agent-container` (Docker-like systemd-nspawn isolation, fully declarative)
+- **Bare-metal NixOS module** — `nixosModules.default` (trusted hosts)
+- **nixos-container wrapper** — `nixosModules.hermes-agent-container` (systemd-nspawn isolation, fully declarative)
 - **microvm wrapper** — `nixosModules.hermes-agent-microvm` (KVM-isolated guest with its own kernel)
-- **podman** — sketched in [docs/ISOLATION.md](docs/ISOLATION.md)
+- **podman/docker wrapper** — `nixosModules.hermes-agent-podman` (OCI container built via `dockerTools`, run via `virtualisation.oci-containers`)
 
 Container quickstart:
 

@@ -7,8 +7,7 @@ Trade-off matrix for the host where hermes-agent runs 24/7.
 | **Bare-metal NixOS** | `nixosModules.default` | systemd hardening only | 0 | ✅ | btrfs subvolume |
 | **nixos-container** (this flake) | `nixosModules.hermes-agent-container` | namespace isolation (mnt, pid, uts, ipc) | ~10 MB extra RAM | ✅ | container fs = subvolume |
 | **microvm.nix** (this flake) | `nixosModules.hermes-agent-microvm` | full VM (kernel-level) | ~100 MB RAM, kvm | ✅ | image-level snapshots |
-| **podman quadlet** | — (DIY) | cgroups + namespaces | ~5 MB | partial (quadlet YAML) | volume bind |
-| **Docker compose** | — (current) | cgroups + namespaces | ~5 MB | imperative YAML | volume bind |
+| **podman/docker** (this flake) | `nixosModules.hermes-agent-podman` | cgroups + namespaces | ~5 MB | ✅ (declarative OCI image via dockerTools) | volume bind |
 
 ## Recommendation by need
 
@@ -123,24 +122,24 @@ Trade-offs vs `nixos-container`:
 | Escape surface | container syscalls | hypervisor + virtio |
 | Use this when | trust host, want declarative isolation | strong adversarial threat model, don't trust host kernel |
 
-## podman (alternative without leaving this flake's ecosystem)
+## podman / docker
 
-If you want podman-style without NixOS containers, build a docker image with the package and run via `virtualisation.oci-containers`:
+First-class module: `nixosModules.hermes-agent-podman`. Builds an OCI image via `dockerTools.buildLayeredImage` containing the hermes-agent venv, runs via `virtualisation.oci-containers` against your chosen backend (podman or docker).
 
 ```nix
-virtualisation.oci-containers.containers.hermes-agent = {
-  image = "localhost/hermes-agent:nix";
-  imageFile = pkgs.dockerTools.buildImage {
-    name = "hermes-agent";
-    tag = "nix";
-    contents = [ inputs.hermes-flake.packages.${pkgs.system}.hermes-agent ];
-    config.Cmd = [ "/bin/hermes" "gateway" "run" ];
-  };
-  environment = { /* same as services.hermes-agent.environment */ };
-  environmentFiles = [ config.sops.secrets."hermes-agent/env".path ];
-  ports = [ "8642:8642" "8644:8644" ];
-  volumes = [ "/var/lib/hermes-agent:/var/lib/hermes-agent" ];
+imports = [ inputs.hermes-flake.nixosModules.hermes-agent-podman ];
+
+services.hermes-agent-podman = {
+  enable = true;
+  backend = "podman";   # or "docker"
+  extras = [ "voice" "anthropic" "mcp" ];
+  environmentFile = config.sops.secrets."hermes-agent/env".path;
+  hostDataDir = "/var/lib/hermes-agent";
+  apiPort = 8642;
+  webhookPort = 8644;
 };
 ```
 
-Out of scope to ship this — easy to derive if needed.
+Defaults to `--read-only`, `--cap-drop=ALL`, `--cap-add=NET_BIND_SERVICE`, `--security-opt=no-new-privileges`, `--tmpfs=/tmp`. State persists via the `hostDataDir` bind mount.
+
+UID inside the container = 10000 (matches the bare-metal and container variants for migration compatibility).

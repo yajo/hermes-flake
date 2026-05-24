@@ -419,24 +419,33 @@ in {
         Restart = "always";
         RestartSec = "10";
 
-        # Hardening
+        # Baseline process safety required for the service to work correctly
+        # with HERMES_HOME pointing at dataDir + lazy-installed deps.
+        # ProtectSystem=strict + ProtectHome=read-only + ReadWritePaths=
+        # [dataDir] is the minimum that allows the lazy-install behavior
+        # while keeping the rest of the filesystem off-limits.
         NoNewPrivileges = true;
         PrivateTmp = true;
         ProtectSystem = "strict";
         ProtectHome = "read-only";
         ReadWritePaths = [cfg.dataDir];
+
+        # Resource caps — null = no cap.
         MemoryMax = mkIf (cfg.memoryMax != null) cfg.memoryMax;
         CPUQuota = mkIf (cfg.cpuQuota != null) cfg.cpuQuota;
 
-        # Additional defense
-        ProtectKernelTunables = true;
-        ProtectKernelModules = true;
-        ProtectControlGroups = true;
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        RestrictRealtime = true;
-        RestrictSUIDSGID = true;
-        SystemCallArchitectures = "native";
+        # NOTE: additional systemd hardening (ProtectKernelTunables,
+        # ProtectKernelModules, ProtectControlGroups, RestrictNamespaces,
+        # LockPersonality, RestrictRealtime, RestrictSUIDSGID,
+        # SystemCallArchitectures, SystemCallFilter, etc.) is intentionally
+        # not prescribed here — host policy is the consumer's call. Apply via
+        # the standard override:
+        #
+        #   systemd.services.hermes-agent.serviceConfig = {
+        #     ProtectKernelTunables = true;
+        #     ProtectKernelModules = true;
+        #     ...
+        #   };
       };
     };
 
