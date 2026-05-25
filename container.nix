@@ -131,7 +131,7 @@ in {
         description = ''
           Create the `hostUser`/`hostGroup` on the host so sops/agenix
           secrets pointed at `hostSecretsPath` can declare
-          `owner = "${hostUser}"` and chown succeeds during activation.
+          `owner = hostUser` and chown succeeds during activation.
 
           Without this, `sops-install-secrets` aborts with
           `failed to lookup user 'hermes'` because the inner user only
