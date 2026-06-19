@@ -18,6 +18,13 @@ with lib; rec {
       example = ["voice" "anthropic" "mcp"];
     };
 
+    extraEnvironment = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      example = {HERMES_YOLO_MODE = "1";};
+      description = "Extra environment variables forwarded to the inner service's Environment=. See docs/ENV_VARS.md.";
+    };
+
     apiPort = mkOption {
       type = types.port;
       default = 8642;
@@ -169,6 +176,7 @@ with lib; rec {
       inherit
         (cfg)
         extras
+        extraEnvironment
         apiPort
         webhookPort
         openBindAddress

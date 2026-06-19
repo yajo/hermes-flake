@@ -229,6 +229,17 @@ in {
       '';
     };
 
+    extraEnvironment = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      example = {HERMES_YOLO_MODE = "1";};
+      description = ''
+        Extra environment variables added to the unit's Environment=, for any
+        HERMES_* knob not modeled by a dedicated option above (e.g.
+        HERMES_YOLO_MODE, HERMES_LANGUAGE, HERMES_QUIET). See docs/ENV_VARS.md.
+      '';
+    };
+
     enableDashboard = mkOption {
       type = types.bool;
       default = false;
@@ -392,7 +403,8 @@ in {
         })
         // (lib.optionalAttrs (cfg.profile != null) {
           HERMES_PROFILE = cfg.profile;
-        });
+        })
+        // cfg.extraEnvironment;
       # Bridge HERMES_*_BOT_TOKEN -> TELEGRAM_BOT_TOKEN / DISCORD_BOT_TOKEN
       # WEBHOOK_SECRET, OPENAI_API_KEY etc come from EnvironmentFile (sops).
       # Bridge happens inside ExecStart wrapper below since systemd Environment=

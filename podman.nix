@@ -40,11 +40,6 @@ in {
         example = "/run/secrets/hermes-agent";
       };
 
-      extraEnvironment = mkOption {
-        type = types.attrsOf types.str;
-        default = {};
-      };
-
       autoStart = mkOption {
         type = types.bool;
         default = true;

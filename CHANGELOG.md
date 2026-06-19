@@ -10,6 +10,7 @@ Conventional Commits in the git log; this file groups by release.
 - `overlays.default` — `pkgs.hermes-agent` for downstream consumers.
 - `extras` option (NixOS + home-manager) and `pkgs.hermes-agent.withExtras [ ... ]` passthru — pick any subset of upstream `pyproject.toml` extras at build time. `availableExtras` enumerates the list; unknown names error at eval time.
 - `extraServiceDeps` option — extra systemd `Wants` / `After` for site-specific deps.
+- `extraEnvironment` option on the base service **and every wrapper** (container / microvm / podman) — attrset of extra `Environment=` vars for HERMES_* knobs without a dedicated option (e.g. `HERMES_YOLO_MODE`). Previously only the podman wrapper and home-manager client exposed it.
 - `enableHealthcheck` + `healthcheckInterval` — toggle / retune the `/health` poll.
 - `services.hermes-agent-container.extraServiceOptions` — opaque attrset forwarded to the inner `services.hermes-agent`.
 - Hourly auto-update workflow (`.github/workflows/update-hermes-agent.yml`) tracking upstream `NousResearch/hermes-agent` releases via `scripts/update-version.sh`.
