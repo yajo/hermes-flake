@@ -103,6 +103,32 @@ in {
         type = types.bool;
         default = true;
       };
+
+      networks = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          Extra container networks to join (oci-containers `.networks`). Use
+          when the agent must reach sidecars by name (e.g. a model gateway) or
+          be reached by a reverse proxy on a shared bridge. The network must
+          already exist (declare it elsewhere or create it out-of-band).
+        '';
+        example = ["homelab-net"];
+      };
+
+      extraVolumes = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          Extra volume mounts appended to the rendered config/SOUL/data set,
+          in `host:container[:opts]` form. For read-only sidecars like a
+          git-versioned skills tree or a static helper binary on PATH.
+        '';
+        example = [
+          "/nix/store/…-rtk/bin/rtk:/usr/local/bin/rtk:ro"
+          "/home/erik/hermes-skills:/opt/skills-ext:ro"
+        ];
+      };
     };
 
   config = mkIf cfg.enable {
@@ -123,6 +149,7 @@ in {
 
     virtualisation.oci-containers.containers.${cfg.containerName} = {
       inherit (cfg) image autoStart cmd;
+      inherit (cfg) networks;
 
       # HERMES_HOME is hardcoded to /opt/data in the upstream entrypoint; set
       # it explicitly for clarity (informational — the entrypoint wins anyway).
@@ -174,11 +201,13 @@ in {
 
       # Mutable state dir + read-only overlay of the rendered config & soul,
       # mirroring the upstream/servarr layout exactly.
-      volumes = [
-        "${toString cfg.hostDataDir}:/opt/data"
-        "${renderedConfig}:/opt/data/config.yaml:ro"
-        "${soulFile}:/opt/data/SOUL.md:ro"
-      ];
+      volumes =
+        [
+          "${toString cfg.hostDataDir}:/opt/data"
+          "${renderedConfig}:/opt/data/config.yaml:ro"
+          "${soulFile}:/opt/data/SOUL.md:ro"
+        ]
+        ++ cfg.extraVolumes;
 
       extraOptions = lib.optional (cfg.memoryMax != null) "--memory=${cfg.memoryMax}";
     };
