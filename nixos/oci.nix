@@ -129,6 +129,19 @@ in {
           "/home/erik/hermes-skills:/opt/skills-ext:ro"
         ];
       };
+
+      publishPorts = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Publish apiPort/webhookPort to the host (`openBindAddress:port:port`).
+          Set false when a reverse proxy reaches the container over a shared
+          docker network (see `networks`) — then no host port is needed and the
+          API isn't exposed on the host's interfaces. The container still binds
+          `openBindAddress` internally (API_SERVER_HOST), so on-network peers
+          and the proxy still reach it; only the host-side mapping is dropped.
+        '';
+      };
     };
 
   config = mkIf cfg.enable {
@@ -192,7 +205,7 @@ in {
       environmentFiles = [cfg.environmentFile];
 
       ports =
-        [
+        lib.optionals cfg.publishPorts [
           "${cfg.openBindAddress}:${toString cfg.apiPort}:${toString cfg.apiPort}"
           "${cfg.openBindAddress}:${toString cfg.webhookPort}:${toString cfg.webhookPort}"
         ]
