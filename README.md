@@ -1,5 +1,8 @@
 # hermes-flake
 
+> **SSOT role (desktop-nixos RFC 2026-06-29):** owns **hermes-agent software**
+> (Nix package + NixOS module). Consumed by desktop-nixos as a pinned flake input.
+
 [![build](https://github.com/ErikBPF/hermes-flake/actions/workflows/build.yml/badge.svg)](https://github.com/ErikBPF/hermes-flake/actions/workflows/build.yml)
 [![upstream](https://img.shields.io/github/v/release/NousResearch/hermes-agent?label=hermes-agent&color=blue)](https://github.com/NousResearch/hermes-agent/releases)
 [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
