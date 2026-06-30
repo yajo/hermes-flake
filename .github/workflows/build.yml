@@ -89,4 +89,5 @@ jobs:
         with:
           name: ErikBPF/hermes-flake
           rolling: true
+          rolling-minor: 2
           visibility: public
