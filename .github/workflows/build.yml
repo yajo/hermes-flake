@@ -72,3 +72,21 @@ jobs:
         continue-on-error: true
         if: matrix.system == 'x86_64-linux'
         run: nix build .#checks.${{ matrix.system }}.nixos-module --print-build-logs
+
+  flakehub-publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: DeterminateSystems/determinate-nix-action@v3
+
+      - uses: DeterminateSystems/flakehub-push@main
+        with:
+          name: ErikBPF/hermes-flake
+          rolling: true
+          visibility: public

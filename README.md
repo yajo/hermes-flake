@@ -4,6 +4,7 @@
 > (Nix package + NixOS module). Consumed by desktop-nixos as a pinned flake input.
 
 [![build](https://github.com/ErikBPF/hermes-flake/actions/workflows/build.yml/badge.svg)](https://github.com/ErikBPF/hermes-flake/actions/workflows/build.yml)
+[![FlakeHub](https://img.shields.io/endpoint?url=https://flakehub.com/f/ErikBPF/hermes-flake/badge)](https://flakehub.com/flake/ErikBPF/hermes-flake)
 [![upstream](https://img.shields.io/github/v/release/NousResearch/hermes-agent?label=hermes-agent&color=blue)](https://github.com/NousResearch/hermes-agent/releases)
 [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![NixOS](https://img.shields.io/badge/NixOS-unstable-blue?logo=nixos)](https://nixos.org)
@@ -14,6 +15,7 @@ Third-party Nix flake packaging [NousResearch/hermes-agent](https://github.com/N
 
 ## Quick start
 
+    nix run "https://flakehub.com/f/ErikBPF/hermes-flake/*" -- --version
     nix run github:ErikBPF/hermes-flake -- --version
 
 ## Outputs
@@ -33,7 +35,7 @@ Third-party Nix flake packaging [NousResearch/hermes-agent](https://github.com/N
 ## Install as a NixOS service
 
     {
-      inputs.hermes-flake.url = "github:ErikBPF/hermes-flake";
+      inputs.hermes-flake.url = "https://flakehub.com/f/ErikBPF/hermes-flake/*";
 
       outputs = { nixpkgs, hermes-flake, sops-nix, ... }: {
         nixosConfigurations.host = nixpkgs.lib.nixosSystem {
